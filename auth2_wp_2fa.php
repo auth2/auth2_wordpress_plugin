@@ -2,25 +2,42 @@
 
 /*
     Plugin Name: INA Securety Auth2 Two-Factor Authentication
-    Version: 1.0.0
     Author: INA Security
     Author URI: http://auth2.com/plugins/wordpress/
-    License: GNU AFFERO GENERAL PUBLIC LICENSE v3
+    Description: Auth2 2 factor authentication plugin for wordpress.
+    License: GPL v2
+    Version: 0.1.0
+    
+	Copyright 2012 INA Security (email : wp_plugin@auth2.com)
 
-    This file is part of INA Securety Auth2 Two-Factor Authentication wordpress plugin or Auth2WPTFA in short.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License, version 2, as 
+    published by the Free Software Foundation.
 
-    Auth2WPTFA (the plugin) is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or (at your option) 
-    any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    Auth2WPTFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-    See the GNU Affero General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 
-    You should have received a copy of the GNU General Public License along with Auth2WPTFA.
-    If not, see <http://www.gnu.org/licenses/>.
-*/
+ 
+function encrypt($text)  
+{    
+    $key = KEY_ENCRYPT;  //define this in config file
+    return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));  
+}  
+
+function decrypt($text)  
+{
+    $key = KEY_ENCRYPT;  //define this in config file
+    return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))); 
+} 
+ 
+
 
 function guid()
 {
@@ -94,7 +111,7 @@ function base32decode($b32str)
     return $decoded;
 }
 
-function auth2_authenticate_user($user="", $username="", $password="") 
+function auth2_authenticate($user="", $username="", $password="") 
 {
     if (isset($_POST["auth2_2fa"]) && isset($_POST["username"]))
     {        
@@ -184,7 +201,7 @@ function auth2_authenticate_user($user="", $username="", $password="")
             $token_name = $create_time. "|". trim(guid());
             $token_value=$user->ID;
             update_option($token_name, $token_value);        
-            auth2_sign_request($user, $token_name, $_POST['redirect_to']);
+            auth2_sign_in_form($user, $token_name, $_POST['redirect_to']);
             exit();
         } 
         else 
@@ -194,7 +211,8 @@ function auth2_authenticate_user($user="", $username="", $password="")
     }
 }
 
-function auth2_sign_request($user, $token_name, $redirect) {
+function auth2_sign_in_form($user, $token_name, $redirect) 
+{
 ?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en-US">
@@ -325,5 +343,5 @@ function auth2_save_user_setting($user_id)
 add_action('personal_options', 'auth2_user_setting');
 add_action('personal_options_update', 'auth2_save_user_setting');
 add_action('admin_head', 'auth2_user_setting_head_script');
-add_filter('authenticate', 'auth2_authenticate_user', 10, 3);
+add_filter('authenticate', 'auth2_authenticate', 10, 3);
 ?>
